@@ -1,0 +1,24 @@
+{
+  "@context": "http://clowder.ncsa.illinois.edu/contexts/extractors.jsonld",
+  "name": "opendronemap.stitcher",
+  "version": "1.0",
+  "description": "Stitch drone images using OpenDroneMap.",
+  "author": "Bing Zhang <bing@illinois.edu>",
+  "contexts": [],
+  "repository": [
+    {
+      "repType": "git",
+      "repUrl": "https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/extractors-opendronemap-stitch"},
+    {
+      "repType": "docker",
+      "repUrl": "clowder/extractors-opendronemap-stitch"
+    }],
+  "process": {
+      "dataset": [
+          "file.added"
+      ]
+  },
+  "external_services": [],
+  "dependencies": [opendronemap, pika, requests],
+  "bibtex": []
+}
