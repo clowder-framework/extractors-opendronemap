@@ -8,10 +8,10 @@
   "repository": [
     {
       "repType": "git",
-      "repUrl": "https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/extractors-opendronemap-stitch"},
+      "repUrl": "https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/extractors-opendronemap"},
     {
       "repType": "docker",
-      "repUrl": "clowder/extractors-opendronemap-stitch"
+      "repUrl": "clowder/extractors-opendronemap"
     }],
   "process": {
       "dataset": [

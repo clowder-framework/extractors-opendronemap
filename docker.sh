@@ -87,7 +87,7 @@ create() {
 }
 
 # Create the docker containers
-create "." "extractors-opendronemap-stitch"
+create "." "extractors-opendronemap"
 
 # remove latest tags
 for r in $LATEST; do
