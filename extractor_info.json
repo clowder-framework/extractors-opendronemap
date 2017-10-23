@@ -19,6 +19,6 @@
       ]
   },
   "external_services": [],
-  "dependencies": [opendronemap, pika, requests],
+  "dependencies": ["opendronemap", "pika", "requests"],
   "bibtex": []
 }

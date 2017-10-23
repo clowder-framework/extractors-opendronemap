@@ -84,8 +84,8 @@ class OpenDroneMapStitch(Extractor):
         logging.debug('OpenDroneMap app finished - %s' % system.now())
 
     def check_message(self, connector, host, secret_key, resource, parameters):
-        if resource['triggering_file'] == "stitch.txt" or resource['triggering_file'] is None:
-            logging.debug("stitch.txt file uploaded")
+        if resource['triggering_file'] == "extractors-opendronemap.txt" or resource['triggering_file'] is None:
+            logging.debug("extractors-opendronemap.txt file uploaded")
             return CheckMessage.download
         return CheckMessage.ignore
 
