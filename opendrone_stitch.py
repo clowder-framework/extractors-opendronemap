@@ -121,8 +121,10 @@ class OpenDroneMapStitch(Extractor):
             self.stitch(connector, resource)
             tiffile = os.path.join(os.path.join(self.opendrone_args.project_path, "odm_orthophoto"), "odm_orthophoto.tif")
             if os.path.isfile(tiffile):
-                logging.debug("[Finish] upload_to_dataset %s " % tiffile)
-                pyclowder.files.upload_to_dataset(connector, host, secret_key, resource['id'], tiffile)
+		resultfile = os.path.join(self.opendrone_args.project_path, "extractors-opendronemap.tif")
+		os.rename(tiffile, resultfile)
+                logging.debug("[Finish] upload_to_dataset %s " % resultfile)
+                pyclowder.files.upload_to_dataset(connector, host, secret_key, resource['id'], resultfile)
             else:
                 raise Exception("%s dose not found" % tiffile)
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
