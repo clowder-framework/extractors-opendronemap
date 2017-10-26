@@ -135,6 +135,12 @@ class OpenDroneMapStitch(Extractor):
         finally:
             try:
                 logging.debug("[Cleanup] remove computing folder: %s" % self.opendrone_args.project_path)
+                for path in paths:
+                    inputfile = os.path.basename(path)
+                    odmfile = os.path.join("/tmp", inputfile+".jpg")
+                    if os.path.isfile(odmfile):
+                        logging.debug("[Cleanup] remove odm .jpg: %s" % odmfile)
+                        os.remove(odmfile)
                 shutil.rmtree(self.opendrone_args.project_path)
             except OSError:
                 pass
