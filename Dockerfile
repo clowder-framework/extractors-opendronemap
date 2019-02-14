@@ -1,6 +1,6 @@
 FROM clowder/pyclowder:2 as pyclowder2
 
-From opendronemap/opendronemap
+From opendronemap/odm
 
 ENV MAIN_SCRIPT="opendrone_stitch.py"
 
