@@ -60,8 +60,8 @@ class OpenDroneMapStitch(Extractor):
 
         # Get the file types that may be denied and/or no conpressed. The actual value of the attributes is
         # ignored, just having the attribute existing triggeres the feature
-        if self.opendrone_args.denyfiletypes.len() > 0:
-            excludedtypes = self.cleanFileExtensions(self.opendrone_args.denyfiletypes)
+        if len(self.args.denyfiletypes) > 0:
+            excludedtypes = self.cleanFileExtensions(self.args.denyfiletypes)
             if 'tif' in excludedtypes:
                 self.opendrone_args.noorthophoto = True
             if 'las' in excludedtypes:
@@ -70,8 +70,8 @@ class OpenDroneMapStitch(Extractor):
                 self.opendrone_args.noply = True
             if 'csv' in excludedtypes:
                 self.opendrone_args.nocsv = True
-        if self.opendrone_args.nofilecompress.len() > 0:
-            nocompresstypes =  self.cleanFileExtensions(self.opendrone_args.nofilecompress)
+        if len(self.args.nofilecompress) > 0:
+            nocompresstypes =  self.cleanFileExtensions(self.args.nofilecompress)
             if 'las' in nocompresstypes:
                 self.opendrone_args.plainlas = True
             if 'ply' in nocompresstypes:
@@ -88,12 +88,12 @@ class OpenDroneMapStitch(Extractor):
         logging.debug("project_path: %s" % str(self.opendrone_args.project_path))
         logging.debug("name: %s" % str(self.opendrone_args.name))
         logging.debug("rerun_all: %r" % bool(self.opendrone_args.rerun_all))
-        logging.debug("excluded file types: %s" % str(self.opendrone_args.denyfiletypes))
+        logging.debug("excluded file types: %s" % str(self.args.denyfiletypes))
 
     # Returns an array of comma-separated file types that has been cleaned
     def cleanFileExtensions(self, extensions_string):
         cleanedtypes = extensions_string.split(',')
-        for i, ext in cleanedtypes:
+        for i, ext in enumerate(cleanedtypes):
             cleaned = ext.strip()
             if cleaned.startswith('.'):
                 cleaned = cleaned[1:]
@@ -239,11 +239,11 @@ class OpenDroneMapStitch(Extractor):
 
             path = os.path.join(self.opendrone_args.working_project_path, "odm_georeferencing")
             if not hasattr(self.opendrone_args, "nolas"):
-                self.upload_file(path, "odm_georeferencing.las", connector, host, secret_key, resource['id'], true && not hasattr(self.opendrone_args, "plainlas"))
+                self.upload_file(path, "odm_georeferencing.las", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainlas")))
             if not hasattr(self.opendrone_args, "noply"):
-                self.upload_file(path, "odm_georeferencing.ply", connector, host, secret_key, resource['id'], true && not hasattr(self.opendrone_args, "plainply"))
+                self.upload_file(path, "odm_georeferencing.ply", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainply")))
             if not hasattr(self.opendrone_args, "nocsv"):
-                self.upload_file(path, "odm_georeferencing.csv", connector, host, secret_key, resource['id'], true && not hasattr(self.opendrone_args, "plaincsv"))
+                self.upload_file(path, "odm_georeferencing.csv", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plaincsv")))
 
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             logging.debug("[Finish] complete computing images at %s" % str(endtime))
