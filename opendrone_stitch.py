@@ -43,7 +43,10 @@ class OpenDroneMapStitch(Extractor):
         # Add our own touches to the command-line, environment variable parser
         self.parser.add_argument('--denyfiletypes',
                         default=os.getenv('DENYFILETYPES', ""),
-                        help='comma separated list of file extensions to never upload (without the period)')
+                        help='Comma separated list of file extensions (without the period) to never upload')
+        self.parser.add_argument('--nofilecompress',
+                        default=os.getenv('NOFILECOMPRESS', ""),
+                        help='Comma separated list of file extensions (without the period) that will not be compressed before upload')
         self.parser.add_argument('name',
                         metavar='<project name>',
                         type=alphanumeric_string,
@@ -55,10 +58,10 @@ class OpenDroneMapStitch(Extractor):
         # specify configuration values that are not allowed to be overridden by users
         self.no_override_settings = ["project_path"]
 
-        # Get the file types that may be denied. The actual value of the attributes is ignored, just
-        # having the attribute existing triggeres the denial feature
+        # Get the file types that may be denied and/or no conpressed. The actual value of the attributes is
+        # ignored, just having the attribute existing triggeres the feature
         if self.opendrone_args.denyfiletypes.len() > 0:
-            excludedtypes = self.cleanExcludedTypes(self.opendrone_args.denyfiletypes)
+            excludedtypes = self.cleanFileExtensions(self.opendrone_args.denyfiletypes)
             if 'tif' in excludedtypes:
                 self.opendrone_args.noorthophoto = True
             if 'las' in excludedtypes:
@@ -67,6 +70,14 @@ class OpenDroneMapStitch(Extractor):
                 self.opendrone_args.noply = True
             if 'csv' in excludedtypes:
                 self.opendrone_args.nocsv = True
+        if self.opendrone_args.nofilecompress.len() > 0:
+            nocompresstypes =  self.cleanFileExtensions(self.opendrone_args.nofilecompress)
+            if 'las' in nocompresstypes:
+                self.opendrone_args.plainlas = True
+            if 'ply' in nocompresstypes:
+                self.opendrone_args.plainply = True
+            if 'csv' in nocompresstypes:
+                self.opendrone_args.plaincsv = True
 
         # setup logging for the exctractor
         logging.getLogger('pyclowder').setLevel(logging.INFO)
@@ -79,9 +90,9 @@ class OpenDroneMapStitch(Extractor):
         logging.debug("rerun_all: %r" % bool(self.opendrone_args.rerun_all))
         logging.debug("excluded file types: %s" % str(self.opendrone_args.denyfiletypes))
 
-    # Returns an array of excluded types that has been cleaned
-    def cleanExcludedTypes(self, types_string):
-        cleanedtypes = self.cleanExcludedTypes(types_string).split(',')
+    # Returns an array of comma-separated file types that has been cleaned
+    def cleanFileExtensions(self, extensions_string):
+        cleanedtypes = extensions_string.split(',')
         for i, ext in cleanedtypes:
             cleaned = ext.strip()
             if cleaned.startswith('.'):
@@ -228,11 +239,11 @@ class OpenDroneMapStitch(Extractor):
 
             path = os.path.join(self.opendrone_args.working_project_path, "odm_georeferencing")
             if not hasattr(self.opendrone_args, "nolas"):
-                self.upload_file(path, "odm_georeferencing.las", connector, host, secret_key, resource['id'], true)
+                self.upload_file(path, "odm_georeferencing.las", connector, host, secret_key, resource['id'], true && not hasattr(self.opendrone_args, "plainlas"))
             if not hasattr(self.opendrone_args, "noply"):
-                self.upload_file(path, "odm_georeferencing.ply", connector, host, secret_key, resource['id'], true)
+                self.upload_file(path, "odm_georeferencing.ply", connector, host, secret_key, resource['id'], true && not hasattr(self.opendrone_args, "plainply"))
             if not hasattr(self.opendrone_args, "nocsv"):
-                self.upload_file(path, "odm_georeferencing.csv", connector, host, secret_key, resource['id'], true)
+                self.upload_file(path, "odm_georeferencing.csv", connector, host, secret_key, resource['id'], true && not hasattr(self.opendrone_args, "plaincsv"))
 
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             logging.debug("[Finish] complete computing images at %s" % str(endtime))
