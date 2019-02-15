@@ -16,7 +16,7 @@ fi
 # start server if asked
 if [ "$1" = 'extractor' ]; then
     cd /code
-    find /code -type f -maxdepth 2
+    find /code -maxdepth 2 -type f
     if [ "$RABBITMQ_PORT_5672_TCP_ADDR" != "" ]; then
         # start extractor after rabbitmq is up
         for i in `seq 1 10`; do
