@@ -217,7 +217,7 @@ class OpenDroneMapStitch(Extractor):
             # creating the folder to place the links to image files. Open Drone Maps wants all
             # the source image files in one folder
             self.opendrone_args.working_project_path = io.join_paths(self.opendrone_args.project_path, self.opendrone_args.name)
-            imagesfolder = os.path.join(self.opendrone_args.working_working_project_path, "images")
+            imagesfolder = os.path.join(self.opendrone_args.working_project_path, "images")
             if not io.dir_exists(imagesfolder):
                 logging.debug('Directory %s does not exist. Creating it now.' % imagesfolder)
                 system.mkdir_p(os.path.abspath(imagesfolder))
