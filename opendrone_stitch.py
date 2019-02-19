@@ -47,6 +47,12 @@ class OpenDroneMapStitch(Extractor):
         self.parser.add_argument('--nofilecompress',
                         default=os.getenv('NOFILECOMPRESS', ""),
                         help='Comma separated list of file extensions (without the period) that will not be compressed before upload')
+        self.parser.add_argument('--orthophotoname',
+                        default=os.getenv('ORTHOPHOTONAME', ""),
+                        help='An alternate file name for the orthophoto images (without the filename extension)')
+        self.parser.add_argument('--pointcloudname',
+                        default=os.getenv('POINTCLOUDNAME', ""),
+                        help='An alternate file name for the point cloud files (without the filename extension)')
         self.parser.add_argument('name',
                         metavar='<project name>',
                         type=alphanumeric_string,
@@ -79,6 +85,10 @@ class OpenDroneMapStitch(Extractor):
             if 'csv' in nocompresstypes:
                 self.opendrone_args.plaincsv = True
 
+        # Make sure our filenames are cleaned up as well to prevent unnamed files from being loaded
+        self.args.orthophotoname = self.args.orthophotoname.strip()
+        self.args.pointcloudname = self.args.pointcloudname.strip()
+
         # setup logging for the exctractor
         logging.getLogger('pyclowder').setLevel(logging.INFO)
         logging.getLogger('__main__').setLevel(logging.DEBUG)
@@ -89,6 +99,9 @@ class OpenDroneMapStitch(Extractor):
         logging.debug("name: %s" % str(self.opendrone_args.name))
         logging.debug("rerun_all: %r" % bool(self.opendrone_args.rerun_all))
         logging.debug("excluded file types: %s" % str(self.args.denyfiletypes))
+        logging.debug("no compression file types: %s" % str(self.args.nofilecompress))
+        logging.debug("orthophoto name override: %s" % str(self.args.orthophotoname))
+        logging.debug("point cloud name override: %s" % str(self.args.pointcloudname))
 
     # Returns an array of comma-separated file types that has been cleaned
     def cleanFileExtensions(self, extensions_string):
@@ -110,13 +123,13 @@ class OpenDroneMapStitch(Extractor):
         # TODO: Move this somewhere it's not hard-coded. Alternatively remove everything we don't create
         if self.opendrone_args.rerun_all:
             os.system("rm -rf "
-                      + self.opendrone_args.working_project_path + "images_resize/ "
-                      + self.opendrone_args.working_project_path + "odm_georeferencing/ "
-                      + self.opendrone_args.working_project_path + "odm_meshing/ "
-                      + self.opendrone_args.working_project_path + "odm_orthophoto/ "
-                      + self.opendrone_args.working_project_path + "odm_texturing/ "
-                      + self.opendrone_args.working_project_path + "opensfm/ "
-                      + self.opendrone_args.working_project_path + "pmvs/")
+                      + self.opendrone_args.project_path + "images_resize/ "
+                      + self.opendrone_args.project_path + "odm_georeferencing/ "
+                      + self.opendrone_args.project_path + "odm_meshing/ "
+                      + self.opendrone_args.project_path + "odm_orthophoto/ "
+                      + self.opendrone_args.project_path + "odm_texturing/ "
+                      + self.opendrone_args.project_path + "opensfm/ "
+                      + self.opendrone_args.project_path + "pmvs/")
 
         # create an instance of my App BlackBox
         # internally configure all tasks
@@ -138,10 +151,10 @@ class OpenDroneMapStitch(Extractor):
         logging.debug('OpenDroneMap app finished - %s' % system.now())
 
     # Helper function for uploading the file to the calling container with optional compression
-    def upload_file(self, file_path, file_name, connector, host, secret_key, dataset_id, compress):
-        sourcefile = os.path.join(file_path, file_name)
+    def upload_file(self, file_path, source_file_name, dest_file_name, connector, host, secret_key, dataset_id, compress):
+        sourcefile = os.path.join(file_path, source_file_name)
         if os.path.isfile(sourcefile):
-            resultfile = os.path.join(self.opendrone_args.working_project_path, file_name)
+            resultfile = os.path.join(self.opendrone_args.project_path, dest_file_name)
             if (compress):
                 resultfile = resultfile + ".zip"
                 with open(sourcefile, 'rb') as f_in:
@@ -186,6 +199,7 @@ class OpenDroneMapStitch(Extractor):
         # We store the settings here in case they're
         # modified by the caller and we restore them when we're all done
         original_settings = self.opendrone_args
+        original_project_path = self.opendrone_args.project_path;
 
         try:
             paths = list()
@@ -216,8 +230,8 @@ class OpenDroneMapStitch(Extractor):
 
             # creating the folder to place the links to image files. Open Drone Maps wants all
             # the source image files in one folder
-            self.opendrone_args.working_project_path = io.join_paths(self.opendrone_args.project_path, self.opendrone_args.name)
-            imagesfolder = os.path.join(self.opendrone_args.working_project_path, "images")
+            self.opendrone_args.project_path = io.join_paths(self.opendrone_args.project_path, self.opendrone_args.name)
+            imagesfolder = os.path.join(self.opendrone_args.project_path, "images")
             if not io.dir_exists(imagesfolder):
                 logging.debug('Directory %s does not exist. Creating it now.' % imagesfolder)
                 system.mkdir_p(os.path.abspath(imagesfolder))
@@ -232,18 +246,20 @@ class OpenDroneMapStitch(Extractor):
             # perform the drone processing
             self.stitch(connector, resource)
 
-            # Upload the output files to the dataset, compressing the larger files
+            # Upload the output files to the dataset, optionally compressing the larger files
+            path = os.path.join(self.opendrone_args.project_path, "odm_orthophoto")
+            filename = self.args.orthophotoname if len(self.args.orthophotoname) > 0 else "odm_orthophoto"
             if not hasattr(self.opendrone_args, "noorthophoto"):
-                path = os.path.join(self.opendrone_args.working_project_path, "odm_orthophoto")
-                self.upload_file(path, "odm_orthophoto.tif", connector, host, secret_key, resource['id'], false)
+                self.upload_file(path, "odm_orthophoto.tif", filename + ".tif", connector, host, secret_key, resource['id'], False)
 
-            path = os.path.join(self.opendrone_args.working_project_path, "odm_georeferencing")
+            path = os.path.join(self.opendrone_args.project_path, "odm_georeferencing")
+            filename = self.args.pointcloudname if len(self.args.pointcloudname) > 0 else "odm_georeferencing"
             if not hasattr(self.opendrone_args, "nolas"):
-                self.upload_file(path, "odm_georeferencing.las", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainlas")))
+                self.upload_file(path, "odm_georeferencing.las", filename + ".las", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainlas")))
             if not hasattr(self.opendrone_args, "noply"):
-                self.upload_file(path, "odm_georeferencing.ply", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainply")))
+                self.upload_file(path, "odm_georeferencing.ply", filename + ".ply", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainply")))
             if not hasattr(self.opendrone_args, "nocsv"):
-                self.upload_file(path, "odm_georeferencing.csv", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plaincsv")))
+                self.upload_file(path, "odm_georeferencing.csv", filename + ".csv", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plaincsv")))
 
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             logging.debug("[Finish] complete computing images at %s" % str(endtime))
@@ -256,16 +272,18 @@ class OpenDroneMapStitch(Extractor):
 
             try:
                 # Clean up the working environment by removing links and created folders
-                logging.debug("[Cleanup] remove computing folder: %s" % self.opendrone_args.working_project_path)
+                logging.debug("[Cleanup] remove computing folder: %s" % self.opendrone_args.project_path)
                 for path in paths:
                     inputfile = os.path.basename(path)
                     odmfile = os.path.join("/tmp", inputfile+".jpg")
                     if os.path.isfile(odmfile):
                         logging.debug("[Cleanup] remove odm .jpg: %s" % odmfile)
                         os.remove(odmfile)
-                shutil.rmtree(self.opendrone_args.working_project_path)
+                shutil.rmtree(self.opendrone_args.project_path)
             except OSError:
                 pass
+            finally:
+                self.opendrone_args.project_path = original_project_path
 
 if __name__ == "__main__":
     args = config.config()

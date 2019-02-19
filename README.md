@@ -34,11 +34,13 @@ Each numbered section below corresponds to the numbered list in the Quick Start 
 ### 1. Start the docker container
 
 There are two environment variables named `DENYFILETYPES` and `NOFILECOMPRESS` that can be set when starting the docker container which affect what data is allowed to be uploaded to Clowder, and whether some files will be compressed or not.
+An additional two environment variables can be specified to override the names of the files uploaded to the dataset; `ORTHOPHOTONAME` and `POINTCLOUDNAME`.
 
-The *extractors-opendronemap.txt* file used to start processing may contain overrides of these two environment variables.
+The *extractors-opendronemap.txt* file used to start processing may contain overrides of the `DENYFILETYPES` and `NOFILECOMPRESS` environment variables.
 In the case of DENYFILETYPES, the overrides only prevent additional, presumeably unwanted, files from being uploaded.
 In the case of NOFILECOMPRESS, the compression step will be skipped and the uncompressed, much larger, file will be uploaded.
 More information on these variables is below.
+Refer to the *extractors-opendronemap.txt.sample* file for more information on the overrides.
 
 To specify these variables on container startup, use the `-e` command line option to define them.
 An example of this is `-e 'DENYFILETYPES=ply,csv'` which prevents the *odm_georeferencing.ply* and *odm_georeferencing.ply* files from uploading.
@@ -67,6 +69,22 @@ The valid extensions that will prevent files from being compressed are:
 * las - point cloud
 * csv - point cloud
 * ply - point cloud
+
+### ORTHOPHOTONAME
+Use this environment variable to change the file name of the uploaded ortho photo.
+This is helpful when running this extractor in an environment where particular file names are used for further processing.
+The extension of the file remains unchanged from the original.
+For example, if the original file has the `.tif` extension, the renamed file will as well.
+
+If the orthophoto image is not uploaded to the dataset, this variable has no effect.
+
+### POINTCLOUDNAME
+This environment variable changes the file name of any point cloud files uploaded to the datasets.
+As with the orthophoto file name override, this override is helpful when a particular file name is used for further processing.
+For any files uploaded to the datasets, the file's extension remains unchanged.
+For example. if the original file has the '.las' extension, the renamed file will as well.
+
+If a point cloud file is not uploaded to the dataset (.las, .ply, .csv), this variable has no effect.
 
 ### 2. Create extractors-opendronemap.txt file
 
