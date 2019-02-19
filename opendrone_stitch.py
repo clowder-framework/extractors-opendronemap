@@ -221,7 +221,7 @@ class OpenDroneMapStitch(Extractor):
 
             # Check for option overrides
             if configfilename != "" and os.stat(configfilename).st_size > 0:
-                configfile = os.open(configfilename)
+                configfile = os.open(configfilename, os.O_RDONLY)
                 if configfile:
                     newsettings = yaml.safe_load(configfile)
                     if newsettings:
@@ -255,11 +255,11 @@ class OpenDroneMapStitch(Extractor):
             path = os.path.join(self.opendrone_args.project_path, "odm_georeferencing")
             filename = self.args.pointcloudname if len(self.args.pointcloudname) > 0 else "odm_georeferencing"
             if not hasattr(self.opendrone_args, "nolas"):
-                self.upload_file(path, "odm_georeferencing.las", filename + ".las", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainlas")))
+                self.upload_file(path, "odm_georeferencing.las", filename + ".las", connector, host, secret_key, resource['id'], True & (not hasattr(self.opendrone_args, "plainlas")))
             if not hasattr(self.opendrone_args, "noply"):
-                self.upload_file(path, "odm_georeferencing.ply", filename + ".ply", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plainply")))
+                self.upload_file(path, "odm_georeferencing.ply", filename + ".ply", connector, host, secret_key, resource['id'], True & (not hasattr(self.opendrone_args, "plainply")))
             if not hasattr(self.opendrone_args, "nocsv"):
-                self.upload_file(path, "odm_georeferencing.csv", filename + ".csv", connector, host, secret_key, resource['id'], true & (not hasattr(self.opendrone_args, "plaincsv")))
+                self.upload_file(path, "odm_georeferencing.csv", filename + ".csv", connector, host, secret_key, resource['id'], True & (not hasattr(self.opendrone_args, "plaincsv")))
 
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             logging.debug("[Finish] complete computing images at %s" % str(endtime))
