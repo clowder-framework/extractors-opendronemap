@@ -44,15 +44,15 @@ class OpenDroneMapStitch(Extractor):
         self.parser.add_argument('--denyfiletypes',
                         default=os.getenv('DENYFILETYPES', ""),
                         help='Comma separated list of file extensions (without the period) to never upload')
-        self.parser.add_argument('--nofilecompress',
-                        default=os.getenv('NOFILECOMPRESS', ""),
-                        help='Comma separated list of file extensions (without the period) that will not be compressed before upload')
         self.parser.add_argument('--orthophotoname',
                         default=os.getenv('ORTHOPHOTONAME', ""),
                         help='An alternate file name for the orthophoto images (without the filename extension)')
         self.parser.add_argument('--pointcloudname',
                         default=os.getenv('POINTCLOUDNAME', ""),
                         help='An alternate file name for the point cloud files (without the filename extension)')
+        self.parser.add_argument('--shapefilename',
+                        default=os.getenv('SHAPEFILENAME', ""),
+                        help='An alternate file name for the shapefile files (without the filename extension)')
         self.parser.add_argument('name',
                         metavar='<project name>',
                         type=alphanumeric_string,
@@ -70,24 +70,15 @@ class OpenDroneMapStitch(Extractor):
             excludedtypes = self.cleanFileExtensions(self.args.denyfiletypes)
             if 'tif' in excludedtypes:
                 self.opendrone_args.noorthophoto = True
-            if 'las' in excludedtypes:
-                self.opendrone_args.nolas = True
-            if 'ply' in excludedtypes:
-                self.opendrone_args.noply = True
-            if 'csv' in excludedtypes:
-                self.opendrone_args.nocsv = True
-        if len(self.args.nofilecompress) > 0:
-            nocompresstypes =  self.cleanFileExtensions(self.args.nofilecompress)
-            if 'las' in nocompresstypes:
-                self.opendrone_args.plainlas = True
-            if 'ply' in nocompresstypes:
-                self.opendrone_args.plainply = True
-            if 'csv' in nocompresstypes:
-                self.opendrone_args.plaincsv = True
+            if 'laz' in excludedtypes:
+                self.opendrone_args.nolaz = True
+            if 'shp' in excludedtypes:
+                self.opendrone_args.noshp = True
 
         # Make sure our filenames are cleaned up as well to prevent unnamed files from being loaded
         self.args.orthophotoname = self.args.orthophotoname.strip()
         self.args.pointcloudname = self.args.pointcloudname.strip()
+        self.args.shapefilename  = self.args.shapefilename.strip()
 
         # setup logging for the exctractor
         logging.getLogger('pyclowder').setLevel(logging.INFO)
@@ -99,9 +90,9 @@ class OpenDroneMapStitch(Extractor):
         logging.debug("name: %s" % str(self.opendrone_args.name))
         logging.debug("rerun_all: %r" % bool(self.opendrone_args.rerun_all))
         logging.debug("excluded file types: %s" % str(self.args.denyfiletypes))
-        logging.debug("no compression file types: %s" % str(self.args.nofilecompress))
         logging.debug("orthophoto name override: %s" % str(self.args.orthophotoname))
         logging.debug("point cloud name override: %s" % str(self.args.pointcloudname))
+        logging.debug("shapefile name override: %s" % str(self.args.shapefilename))
 
     # Returns an array of comma-separated file types that has been cleaned
     def cleanFileExtensions(self, extensions_string):
@@ -252,14 +243,20 @@ class OpenDroneMapStitch(Extractor):
             if not hasattr(self.opendrone_args, "noorthophoto"):
                 self.upload_file(path, "odm_orthophoto.tif", filename + ".tif", connector, host, secret_key, resource['id'], False)
 
+            # Handle uploading two types of files from the georeferencing folder
             path = os.path.join(self.opendrone_args.project_path, "odm_georeferencing")
-            filename = self.args.pointcloudname if len(self.args.pointcloudname) > 0 else "odm_georeferencing"
-            if not hasattr(self.opendrone_args, "nolas"):
-                self.upload_file(path, "odm_georeferencing.las", filename + ".las", connector, host, secret_key, resource['id'], True & (not hasattr(self.opendrone_args, "plainlas")))
-            if not hasattr(self.opendrone_args, "noply"):
-                self.upload_file(path, "odm_georeferencing.ply", filename + ".ply", connector, host, secret_key, resource['id'], True & (not hasattr(self.opendrone_args, "plainply")))
-            if not hasattr(self.opendrone_args, "nocsv"):
-                self.upload_file(path, "odm_georeferencing.csv", filename + ".csv", connector, host, secret_key, resource['id'], True & (not hasattr(self.opendrone_args, "plaincsv")))
+            filename = self.args.pointcloudname if len(self.args.pointcloudname) > 0 else "odm_georeferenced_model"
+            if not hasattr(self.opendrone_args, "nolaz"):
+                self.upload_file(path, "odm_georeferenced_model.laz", filename + ".laz", connector, host, secret_key, resource['id'], False)
+            filename = self.args.shapefilename if len(self.args.shapefilename) > 0 else "odm_georeferenced_model.bounds"
+            if not hasattr(self.opendrone_args, "noshp"):
+                self.upload_file(path, "odm_georeferenced_model.bounds.shp", filename + ".shp", connector, host, secret_key, resource['id'], False)
+                self.upload_file(path, "odm_georeferenced_model.bounds.dbf", filename + ".dbf", connector, host, secret_key, resource['id'], False)
+                self.upload_file(path, "odm_georeferenced_model.bounds.prj", filename + ".prj", connector, host, secret_key, resource['id'], False)
+                self.upload_file(path, "odm_georeferenced_model.bounds.shx", filename + ".shx", connector, host, secret_key, resource['id'], False)
+                self.upload_file(path, "proj.txt",                           filename + ".proj.txt", connector, host, secret_key, resource['id'], False)
+                self.upload_file(path, "odm_georeferenced_model.bounds.geojson", filename + ".geojson", connector, host, secret_key, resource['id'], False)
+                self.upload_file(path, "odm_georeferenced_model.boundary.json", filename + ".json", connector, host, secret_key, resource['id'], False)
 
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             logging.debug("[Finish] complete computing images at %s" % str(endtime))
