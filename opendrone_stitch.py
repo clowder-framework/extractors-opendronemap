@@ -14,6 +14,8 @@ from opendm import config
 from opendm import system
 from opendm import io
 
+from argparse import Namespace
+
 import ecto
 import os
 import sys
@@ -161,20 +163,21 @@ class OpenDroneMapStitch(Extractor):
 
     # Merges new settings with the master settings. Handles cases when new settings are not permitted
     # to override master settings by restoring those if they've been overridden
-    def merge_settings(nastersettings, newsettings):
+    def merge_settings(self, mastersettings, newsettings):
         mergedsettings = dict()
-        mergedsettings.update(nastersettings)
+        master_vars = vars(mastersettings)
+        mergedsettings.update(master_vars)
         mergedsettings.update(newsettings)
 
         # Don't allow the override of certain settings
-        for i, name in enumerate(self.no_override_settings):
+        for name in self.no_override_settings:
             if name in mergedsettings:
-                if name in args:
-                    mergedsettings[name] = args[name]
+                if name in master_vars:
+                    mergedsettings[name] = master_vars[name]
                 else:
                     mergedsettings.pop(name)
 
-        return mergedsettings
+        return Namespace(**mergedsettings)
 
     # Overidden method that checks if we want to process a message, or not
     def check_message(self, connector, host, secret_key, resource, parameters):
