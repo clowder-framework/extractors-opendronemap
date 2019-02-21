@@ -7,6 +7,7 @@ import tempfile
 import math
 import os
 import subprocess
+import yaml
 
 from opendm import log
 from opendm import config
@@ -167,8 +168,11 @@ class OpenDroneMapStitch(Extractor):
 
         # Don't allow the override of certain settings
         for i, name in enumerate(self.no_override_settings):
-            if hasattr(newsettings, name):
-                mergedsettings[name] = mastersettings[name]
+            if name in mergedsettings:
+                if name in args:
+                    mergedsettings[name] = args[name]
+                else:
+                    mergedsettings.pop(name)
 
         return mergedsettings
 
@@ -212,7 +216,7 @@ class OpenDroneMapStitch(Extractor):
 
             # Check for option overrides
             if configfilename != "" and os.stat(configfilename).st_size > 0:
-                configfile = os.open(configfilename, os.O_RDONLY)
+                configfile = open(configfilename, "r")
                 if configfile:
                     newsettings = yaml.safe_load(configfile)
                     if newsettings:

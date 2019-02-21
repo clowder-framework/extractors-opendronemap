@@ -8,9 +8,6 @@
 #nolas: True         # prevents generated las (point cloud) files from being uploaded (has no impact on how long it takes to run)
 #noply: True         # prevents generated ply (point cloud) files from being uploaded (has no impact on how long it takes to run)
 #nocsv: True         # prevents generated csv (point cloud) files from being uploaded (has no impact on how long it takes to run)
-#plainlas: True      # Do not compress the resulting las file before upload (nolas option makes this option inactive)
-#plainply: True      # Do not compress the resulting ply file before upload (noply option makes this option inactive)
-#plaincsv: True      # Do not compress the resulting csv file before upload (nocsv option makes this option inactive)
 
 # Open Drone Map setting overrides
 #resize_to: 2400
