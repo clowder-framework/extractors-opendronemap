@@ -17,10 +17,8 @@ from opendm import io
 from argparse import Namespace
 
 import ecto
-import os
 import sys
 import gzip
-import shutil
 
 from scripts.odm_app import ODMApp
 
@@ -38,28 +36,28 @@ class OpenDroneMapStitch(Extractor):
 
     # Initialization of instance
     def __init__(self, args):
-        Extractor.__init__(self)
+        super(OpenDroneMapStitch, self).__init__()
 
         # Save a reference to the arguments passed in
         self.opendrone_args = args
 
         # Add our own touches to the command-line, environment variable parser
         self.parser.add_argument('--denyfiletypes',
-                        default=os.getenv('DENYFILETYPES', ""),
-                        help='Comma separated list of file extensions (without the period) to never upload')
+                                 default=os.getenv('DENYFILETYPES', ""),
+                                 help='Comma separated list of file extensions (without the period) to never upload')
         self.parser.add_argument('--orthophotoname',
-                        default=os.getenv('ORTHOPHOTONAME', ""),
-                        help='An alternate file name for the orthophoto images (without the filename extension)')
+                                 default=os.getenv('ORTHOPHOTONAME', ""),
+                                 help='An alternate file name for the orthophoto images (without the filename extension)')
         self.parser.add_argument('--pointcloudname',
-                        default=os.getenv('POINTCLOUDNAME', ""),
-                        help='An alternate file name for the point cloud files (without the filename extension)')
+                                 default=os.getenv('POINTCLOUDNAME', ""),
+                                 help='An alternate file name for the point cloud files (without the filename extension)')
         self.parser.add_argument('--shapefilename',
-                        default=os.getenv('SHAPEFILENAME', ""),
-                        help='An alternate file name for the shapefile files (without the filename extension)')
+                                 default=os.getenv('SHAPEFILENAME', ""),
+                                 help='An alternate file name for the shapefile files (without the filename extension)')
         self.parser.add_argument('name',
-                        metavar='<project name>',
-                        type=alphanumeric_string,
-                        help='Name of Project (i.e subdirectory of projects folder)')
+                                 metavar='<project name>',
+                                 type=alphanumeric_string,
+                                 help='Name of Project (i.e subdirectory of projects folder)')
 
         # parse command line and load default logging configuration
         self.setup()
@@ -67,10 +65,10 @@ class OpenDroneMapStitch(Extractor):
         # specify configuration values that are not allowed to be overridden by users
         self.no_override_settings = ["project_path"]
 
-        # Get the file types that may be denied and/or no conpressed. The actual value of the attributes is
-        # ignored, just having the attribute existing triggeres the feature
+        # Get the file types that may be denied and/or no conpressed. The actual value of the
+        # attributes is ignored, just having the attribute existing triggeres the feature
         if len(self.args.denyfiletypes) > 0:
-            excludedtypes = self.cleanFileExtensions(self.args.denyfiletypes)
+            excludedtypes = self.clean_file_extensions(self.args.denyfiletypes)
             if 'tif' in excludedtypes:
                 self.opendrone_args.noorthophoto = True
             if 'laz' in excludedtypes:
@@ -81,7 +79,7 @@ class OpenDroneMapStitch(Extractor):
         # Make sure our filenames are cleaned up as well to prevent unnamed files from being loaded
         self.args.orthophotoname = self.args.orthophotoname.strip()
         self.args.pointcloudname = self.args.pointcloudname.strip()
-        self.args.shapefilename  = self.args.shapefilename.strip()
+        self.args.shapefilename = self.args.shapefilename.strip()
 
         # setup logging for the exctractor
         logging.getLogger('pyclowder').setLevel(logging.INFO)
@@ -98,7 +96,7 @@ class OpenDroneMapStitch(Extractor):
         logging.debug("shapefile name override: %s" % str(self.args.shapefilename))
 
     # Returns an array of comma-separated file types that has been cleaned
-    def cleanFileExtensions(self, extensions_string):
+    def clean_file_extensions(self, extensions_string):
         cleanedtypes = extensions_string.split(',')
         for i, ext in enumerate(cleanedtypes):
             cleaned = ext.strip()
@@ -114,7 +112,8 @@ class OpenDroneMapStitch(Extractor):
         logging.debug('Initializing OpenDroneMap app - %s' % system.now())
 
         # If user asks to rerun everything, delete all of the existing progress directories.
-        # TODO: Move this somewhere it's not hard-coded. Alternatively remove everything we don't create
+        # TODO: Move this somewhere it's not hard-coded. Alternatively remove everything
+        # we don't create
         if self.opendrone_args.rerun_all:
             os.system("rm -rf "
                       + self.opendrone_args.project_path + "images_resize/ "
@@ -149,7 +148,7 @@ class OpenDroneMapStitch(Extractor):
         sourcefile = os.path.join(file_path, source_file_name)
         if os.path.isfile(sourcefile):
             resultfile = os.path.join(self.opendrone_args.project_path, dest_file_name)
-            if (compress):
+            if compress:
                 resultfile = resultfile + ".zip"
                 with open(sourcefile, 'rb') as f_in:
                     with gzip.open(resultfile, 'wb') as f_out:
@@ -197,11 +196,11 @@ class OpenDroneMapStitch(Extractor):
         # We store the settings here in case they're
         # modified by the caller and we restore them when we're all done
         original_settings = self.opendrone_args
-        original_project_path = self.opendrone_args.project_path;
+        original_project_path = self.opendrone_args.project_path
 
         try:
             paths = list()
-            configfilename = "";
+            configfilename = ""
             for localfile in resource['local_paths']:
                 # deal with mounted/local files
                 if localfile.lower().endswith('.jpg'):
@@ -272,7 +271,7 @@ class OpenDroneMapStitch(Extractor):
             logging.debug(ex.message)
         finally:
             # Restore any settings that might have changed
-            self.opendrone_args = original_settings;
+            self.opendrone_args = original_settings
 
             try:
                 # Clean up the working environment by removing links and created folders

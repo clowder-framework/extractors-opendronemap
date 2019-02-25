@@ -47,7 +47,7 @@ project_path: '/code' # Example: '/home/user/ODMProjects
 #dem_sample_radius: 1.0
 #dem_resolution: 2
 #dem_radius: 0.5
-orthophoto_resolution: 1.0 # Pixels/meter
+orthophoto_resolution: 2.0 # Pixels/meter
 #orthophoto_target_srs: !!null # Currently does nothing
 #orthophoto_no_tiled: False
 #orthophoto_compression: DEFLATE # Options are [JPEG, LZW, PACKBITS, DEFLATE, LZMA, NONE] Don't change unless you know what you are doing
