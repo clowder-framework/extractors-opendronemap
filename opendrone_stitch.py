@@ -35,11 +35,8 @@ from opendm.config import alphanumeric_string
 class OpenDroneMapStitch(Extractor):
 
     # Initialization of instance
-    def __init__(self, args):
+    def __init__(self):
         super(OpenDroneMapStitch, self).__init__()
-
-        # Save a reference to the arguments passed in
-        self.opendrone_args = args
 
         # Add our own touches to the command-line, environment variable parser
         self.parser.add_argument('--denyfiletypes',
@@ -59,11 +56,18 @@ class OpenDroneMapStitch(Extractor):
                                  type=alphanumeric_string,
                                  help='Name of Project (i.e subdirectory of projects folder)')
 
-        # parse command line and load default logging configuration
-        self.setup()
-
         # specify configuration values that are not allowed to be overridden by users
         self.no_override_settings = ["project_path"]
+
+        self.opendrone_args = None
+
+    # parse command line and load default logging configuration
+    def dosetup(self, args):
+
+        # Save a reference to the arguments passed in
+        self.opendrone_args = args
+
+        super(OpenDroneMapStitch, self).setup()
 
         # Get the file types that may be denied and/or no conpressed. The actual value of the
         # attributes is ignored, just having the attribute existing triggeres the feature
@@ -291,5 +295,7 @@ class OpenDroneMapStitch(Extractor):
 if __name__ == "__main__":
     args = config.config()
     args.project_path = tempfile.mkdtemp()
-    extractor = OpenDroneMapStitch(args)
+
+    extractor = OpenDroneMapStitch()
+    extractor.dosetup(args)
     extractor.start()
