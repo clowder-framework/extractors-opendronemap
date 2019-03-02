@@ -1,14 +1,12 @@
-FROM clowder/pyclowder:2 as pyclowder2
 
-From opendronemap/odm
+FROM opendronemap/odm
 
 ENV MAIN_SCRIPT="opendrone_stitch.py"
 
 RUN pip install pika \
-    && pip install requests
+    && pip install requests pyclowder
 
-COPY --from=pyclowder2 /usr/local/lib/python2.7/dist-packages/pyclowder/ /usr/local/lib/python2.7/dist-packages/pyclowder/
-COPY entrypoint.sh *.py extractor_info.json /code/
+    COPY entrypoint.sh *.py extractor_info.json /code/
 
 ENTRYPOINT ["/code/entrypoint.sh"]
 CMD ["extractor"]
