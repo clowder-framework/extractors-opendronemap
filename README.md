@@ -81,7 +81,7 @@ For example. if the original file has the '.shp' or '.dbf' extension, the rename
 
 If a shapefile is not uploaded to the dataset, this variable has no effect.
 
-### 2. Create extractors-opendronemap.txt file
+### 2. Create extractors-opendronemap.txt file [Alpha - non-empty file may not work properly]
 
 Creating an empty *extractors-opendronemap.txt* file will produce the default results from the OpenDroneMap docker extractor instance.
 

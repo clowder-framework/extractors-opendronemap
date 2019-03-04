@@ -13,6 +13,7 @@ from opendm import log
 from opendm import config
 from opendm import system
 from opendm import io
+from opendm import context
 
 from argparse import Namespace
 
@@ -170,7 +171,7 @@ class OpenDroneMapStitch(Extractor):
 
         for name in newsettings:
             if not name in self.no_override_settings:
-                mastersettings[name] = newsettings[name]
+                setattr(mastersettings, name, newsettings[name])
 
         return mastersettings
 
