@@ -29,7 +29,7 @@ if [ "$1" = 'extractor' ]; then
 
     # just launch extractor and see what happens
     chmod 755 ./${MAIN_SCRIPT}
-    python ./${MAIN_SCRIPT} code
+    exec python ./${MAIN_SCRIPT} code
 fi
 
 exec "$@"
