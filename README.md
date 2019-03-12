@@ -83,6 +83,9 @@ If a shapefile is not uploaded to the dataset, this variable has no effect.
 
 ### 2. Create extractors-opendronemap.txt file [Alpha - non-empty file may not work properly]
 
+Note: when using overrides it's possible to create a configuration that will cause the extractor to stop working properly.
+Monitor the extractor when using this feature for multiple uploads of the same file, signifying a recovered crash, or no file uploads, signifying an un-recovered crash.
+
 Creating an empty *extractors-opendronemap.txt* file will produce the default results from the OpenDroneMap docker extractor instance.
 
 To override, or fine tune, the default behavior, copy the *extractors-opendronemap.txt.sample* file to *extractors-opendronemap.txt* and modify the contents.
