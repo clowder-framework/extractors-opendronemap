@@ -8,6 +8,7 @@ import math
 import os
 import subprocess
 import yaml
+import json
 
 from opendm import log
 from opendm import config
@@ -132,17 +133,31 @@ class OpenDroneMapStitch(Extractor):
         # create an instance of my App BlackBox
         # internally configure all tasks
         connector.status_update(StatusMessage.processing, resource, "Creating ODMApp.")
-        app = ODMApp(args=self.opendrone_args)
 
-        # create a plasm that only contains the BlackBox
-        connector.status_update(StatusMessage.processing, resource, "Generate Plasm.")
-        plasm = ecto.Plasm()
-        connector.status_update(StatusMessage.processing, resource, "plasm.insert(app).")
-        plasm.insert(app)
+        tfd, tn = tempfile.mkstemp()
+        with open(tn, 'w') as out_f:
+            odm_args = vars(self.opendrone_args)
+            for key in odm_args:
+                if not odm_args[key] is None:
+                    out_f.write(str(key) + " : " + str(odm_args[key]) + "\n")
 
-        # execute the plasm
-        connector.status_update(StatusMessage.processing, resource, "plasm.execute.")
-        plasm.execute(niter=1)
+        try:
+            my_env = os.environ.copy()
+            my_env["ODM_SETTINGS"] = tn
+            my_path = os.path.dirname(os.path.realpath(__file__))
+            if not my_path:
+                my_path = "."
+            script_path = os.path.join(my_path,"worker.py")
+            proc = subprocess.call([script_path, "code"], env=my_env, stdout=subprocess.PIPE)
+        except Exception as ex:
+            connector.status_update(StatusMessage.processing, resource, "Exception: " + str(ex))
+            logging.debug("Exception: " + str(ex))
+
+        try:
+            result = proc.communicate()[0]
+            logging.debug("Result: " + result)
+        except Exception as ex:
+            logging.debug("Result exception: " + str(ex))
 
         connector.status_update(StatusMessage.processing, resource, "OpenDroneMap app finished.")
 
