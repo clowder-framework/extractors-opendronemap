@@ -4,25 +4,10 @@ import shutil
 import datetime
 import logging
 import tempfile
-import math
 import os
 import subprocess
-import yaml
-import json
-
-from opendm import log
-from opendm import config
-from opendm import system
-from opendm import io
-from opendm import context
-
-from argparse import Namespace
-
-import ecto
-import sys
 import gzip
-
-from scripts.odm_app import ODMApp
+import yaml
 
 from pyclowder.extractors import Extractor
 from pyclowder.utils import CheckMessage
@@ -30,7 +15,10 @@ from pyclowder.utils import StatusMessage
 import pyclowder.files
 import pyclowder.datasets
 
-from opendm import context
+from opendm import config
+from opendm import system
+from opendm import io
+
 from opendm.config import alphanumeric_string
 
 # This class prepares and runs the Open Drone Map code in the Clowder environment
@@ -134,7 +122,7 @@ class OpenDroneMapStitch(Extractor):
         # internally configure all tasks
         connector.status_update(StatusMessage.processing, resource, "Creating ODMApp.")
 
-        tfd, tn = tempfile.mkstemp()
+        _, tn = tempfile.mkstemp()
         with open(tn, 'w') as out_f:
             odm_args = vars(self.opendrone_args)
             for key in odm_args:
@@ -148,16 +136,32 @@ class OpenDroneMapStitch(Extractor):
             if not my_path:
                 my_path = "."
             script_path = os.path.join(my_path,"worker.py")
-            proc = subprocess.call([script_path, "code"], env=my_env, stdout=subprocess.PIPE)
+            proc = subprocess.Popen([script_path, "code"], bufsize=-1, env=my_env,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         except Exception as ex:
             connector.status_update(StatusMessage.processing, resource, "Exception: " + str(ex))
             logging.debug("Exception: " + str(ex))
 
-        try:
-            result = proc.communicate()[0]
-            logging.debug("Result: " + result)
-        except Exception as ex:
-            logging.debug("Result exception: " + str(ex))
+        if proc:
+            # Loop here processing the output until the proc finishes
+            logging.debug("Waiting for process to finish")
+            connector.status_update(StatusMessage.processing, resource, "Waiting for process to finish")
+            while proc.returncode is None:
+                if not proc.stdout is None:
+                    try:
+                        while True:
+                            line = proc.stdout.readline()
+                            if line:
+                                logging.debug(line.rstrip('\n'))
+                            else:
+                                proc.poll()
+                                break
+                    except Exception as ex:
+                        connector.status_update(StatusMessage.processing, resource, "Ignoring exception while waiting: " + str(ex))
+
+                # Sleep and try again for process to complete
+                time.sleep(1)
+            logging.debug("Return code: " + str(proc.returncode))
 
         connector.status_update(StatusMessage.processing, resource, "OpenDroneMap app finished.")
 
