@@ -45,6 +45,10 @@ class OpenDroneMapStitch(Extractor):
                                  metavar='<project name>',
                                  type=alphanumeric_string,
                                  help='Name of Project (i.e subdirectory of projects folder)')
+        # Used to assist in debugging a running instance
+        self.parser.add_argument('--waitonerror',
+                                 default=False,
+                                 help='Wait around if an error ocurrs and don''t prcess other requests (used for debugging)')
 
         # specify configuration values that are not allowed to be overridden by users
         self.no_override_settings = ["project_path"]
@@ -153,6 +157,7 @@ class OpenDroneMapStitch(Extractor):
                             line = proc.stdout.readline()
                             if line:
                                 logging.debug(line.rstrip('\n'))
+                                connector.status_update(StatusMessage.processing, resource, line.rstrip('\n'))
                             else:
                                 proc.poll()
                                 break
@@ -162,8 +167,17 @@ class OpenDroneMapStitch(Extractor):
                 # Sleep and try again for process to complete
                 time.sleep(1)
             logging.debug("Return code: " + str(proc.returncode))
+            connector.status_update(StatusMessage.processing, resource, "Return code: " + str(proc.returncode))
+            if proc.returncode != 0 and self.args.waitonerror:
+                connector.status_update(StatusMessage.processing, resource, "Bad return code, hanging out until killed")
+                while True:
+                    connector.status_update(StatusMessage.processing, resource, "Sleeping for 1000 seconds")
+                    time.sleep(1000)
 
         connector.status_update(StatusMessage.processing, resource, "OpenDroneMap app finished.")
+
+        # Clean up temporary file
+        os.remove(tn)
 
         logging.debug('OpenDroneMap app finished - %s' % system.now())
 
