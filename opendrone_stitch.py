@@ -240,7 +240,7 @@ class OpenDroneMapStitch(Extractor):
                 else:
                     # deal with downloaded files
                     for image in resource['files']:
-                        if image['filepath'] == localfile:
+                        if 'filepath' in image and image['filepath'] == localfile:
                             if image['filename'].lower().endswith('.jpg'):
                                 paths.append(image['filename'])
                             elif image['filename'].lower().endswith("extractors-opendronemap.txt"):
