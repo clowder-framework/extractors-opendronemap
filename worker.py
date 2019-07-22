@@ -4,11 +4,11 @@ import os
 import sys
 import json
 import yaml
-import ecto
+#import ecto
 
 from opendm import config
 
-from scripts.odm_app import ODMApp
+from stages.odm_app import ODMApp
 
 print "[worker] Starting"
 
@@ -38,12 +38,13 @@ for name in newsettings:
 
 print "[worker] Starting"
 app = ODMApp(args=args)
+app.execute()
 
 # create a plasm that only contains the BlackBox
-plasm = ecto.Plasm()
-plasm.insert(app)
+#plasm = ecto.Plasm()
+#plasm.insert(app)
 
 # execute the plasm
-plasm.execute(niter=1)
+#plasm.execute(niter=1)
 
 print "[worker] finishing"

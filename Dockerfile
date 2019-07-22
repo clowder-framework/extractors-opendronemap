@@ -1,12 +1,12 @@
 
-FROM opendronemap/odm
+FROM opendronemap/odm:0.7.0
 
 ENV MAIN_SCRIPT="opendrone_stitch.py"
 
 RUN pip install pika \
     && pip install --ignore-installed requests pyclowder
 
-    COPY entrypoint.sh *.py extractor_info.json settings.yaml /code/
+COPY entrypoint.sh *.py extractor_info.json settings.yaml /code/
 
 ENTRYPOINT ["/code/entrypoint.sh"]
 CMD ["extractor"]
