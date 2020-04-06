@@ -5,6 +5,7 @@ import datetime
 import logging
 import tempfile
 import os
+import json
 import subprocess
 import gzip
 import yaml
@@ -48,7 +49,7 @@ class OpenDroneMapStitch(Extractor):
         # Used to assist in debugging a running instance
         self.parser.add_argument('--waitonerror',
                                  default=False,
-                                 help='Wait around if an error ocurrs and don''t prcess other requests (used for debugging)')
+                                 help='Wait around if an error ocurrs and don\'t prcess other requests (used for debugging)')
 
         # specify configuration values that are not allowed to be overridden by users
         self.no_override_settings = ["project_path"]
@@ -79,19 +80,23 @@ class OpenDroneMapStitch(Extractor):
         self.args.pointcloudname = self.args.pointcloudname.strip()
         self.args.shapefilename = self.args.shapefilename.strip()
 
-        # setup logging for the exctractor
+        # TODO: Parameterize logfilename?
+        self.args.logfilename = "odm_stitching.log"
+
+        # setup logging for the extractor
+        self.logger = logging.getLogger('__main__')
+        self.logger.setLevel(logging.INFO)
         logging.getLogger('pyclowder').setLevel(logging.INFO)
-        logging.getLogger('__main__').setLevel(logging.DEBUG)
         logging.getLogger('pika').setLevel(logging.INFO)
 
         # report on some state values
-        logging.debug("project_path: %s" % str(self.opendrone_args.project_path))
-        logging.debug("name: %s" % str(self.opendrone_args.name))
-        logging.debug("rerun_all: %r" % bool(self.opendrone_args.rerun_all))
-        logging.debug("excluded file types: %s" % str(self.args.denyfiletypes))
-        logging.debug("orthophoto name override: %s" % str(self.args.orthophotoname))
-        logging.debug("point cloud name override: %s" % str(self.args.pointcloudname))
-        logging.debug("shapefile name override: %s" % str(self.args.shapefilename))
+        self.logger.debug("project_path: %s" % str(self.opendrone_args.project_path))
+        self.logger.debug("name: %s" % str(self.opendrone_args.name))
+        self.logger.debug("rerun_all: %r" % bool(self.opendrone_args.rerun_all))
+        self.logger.debug("excluded file types: %s" % str(self.args.denyfiletypes))
+        self.logger.debug("orthophoto name override: %s" % str(self.args.orthophotoname))
+        self.logger.debug("point cloud name override: %s" % str(self.args.pointcloudname))
+        self.logger.debug("shapefile name override: %s" % str(self.args.shapefilename))
 
     # Returns an array of comma-separated file types that has been cleaned
     def clean_file_extensions(self, extensions_string):
@@ -107,7 +112,7 @@ class OpenDroneMapStitch(Extractor):
 
     # Main worker method that performs folder maintenance as needed and calls ODM
     def stitch(self, connector, resource):
-        logging.debug('Initializing OpenDroneMap app - %s' % system.now())
+        self.logger.debug('Initializing OpenDroneMap app - %s' % system.now())
 
         # If user asks to rerun everything, delete all of the existing progress directories.
         # TODO: Move this somewhere it's not hard-coded. Alternatively remove everything
@@ -126,8 +131,8 @@ class OpenDroneMapStitch(Extractor):
         # internally configure all tasks
         connector.status_update(StatusMessage.processing, resource, "Creating ODMApp.")
 
-        _, tn = tempfile.mkstemp()
-        with open(tn, 'w') as out_f:
+        settingsfilepath = os.path.join(self.opendrone_args.project_path, "settings.yaml")
+        with open(settingsfilepath, 'w') as out_f:
             odm_args = vars(self.opendrone_args)
             for key in odm_args:
                 if not odm_args[key] is None:
@@ -135,7 +140,7 @@ class OpenDroneMapStitch(Extractor):
 
         try:
             my_env = os.environ.copy()
-            my_env["ODM_SETTINGS"] = tn
+            my_env["ODM_SETTINGS"] = settingsfilepath
             my_path = os.path.dirname(os.path.realpath(__file__))
             if not my_path:
                 my_path = "."
@@ -144,42 +149,44 @@ class OpenDroneMapStitch(Extractor):
                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         except Exception as ex:
             connector.status_update(StatusMessage.processing, resource, "Exception: " + str(ex))
-            logging.debug("Exception: " + str(ex))
+            self.logger.error("Exception: " + str(ex))
 
-        if proc:
-            # Loop here processing the output until the proc finishes
-            logging.debug("Waiting for process to finish")
-            connector.status_update(StatusMessage.processing, resource, "Waiting for process to finish")
-            while proc.returncode is None:
-                if not proc.stdout is None:
-                    try:
-                        while True:
-                            line = proc.stdout.readline()
-                            if line:
-                                logging.debug(line.rstrip('\n'))
-                                connector.status_update(StatusMessage.processing, resource, line.rstrip('\n'))
-                            else:
-                                proc.poll()
-                                break
-                    except Exception as ex:
-                        connector.status_update(StatusMessage.processing, resource, "Ignoring exception while waiting: " + str(ex))
-
-                # Sleep and try again for process to complete
-                time.sleep(1)
-            logging.debug("Return code: " + str(proc.returncode))
-            connector.status_update(StatusMessage.processing, resource, "Return code: " + str(proc.returncode))
-            if proc.returncode != 0 and self.args.waitonerror:
-                connector.status_update(StatusMessage.processing, resource, "Bad return code, hanging out until killed")
-                while True:
-                    connector.status_update(StatusMessage.processing, resource, "Sleeping for 1000 seconds")
-                    time.sleep(1000)
-
-        connector.status_update(StatusMessage.processing, resource, "OpenDroneMap app finished.")
-
-        # Clean up temporary file
-        os.remove(tn)
-
-        logging.debug('OpenDroneMap app finished - %s' % system.now())
+        logfilepath = os.path.join(self.opendrone_args.project_path, self.args.logfilename)
+        with open(logfilepath, 'wb', 0) as logfile:
+            if proc:
+                # Loop here processing the output until the proc finishes
+                self.logger.debug("Waiting for process to finish")
+                connector.status_update(StatusMessage.processing, resource, "Waiting for process to finish")
+                while proc.returncode is None:
+                    if not proc.stdout is None:
+                        try:
+                            while True:
+                                line = proc.stdout.readline()
+                                if line:
+                                    msg_payload = line.rstrip('\n')
+                                    self.logger.debug(msg_payload)
+                                    connector.status_update(StatusMessage.processing, resource, msg_payload)
+                                    logfile.write(line)
+                                else:
+                                    proc.poll()
+                                    break
+                        except Exception as ex:
+                            connector.status_update(StatusMessage.processing, resource, "Ignoring exception while waiting: " + str(ex))
+    
+                    # Sleep and try again for process to complete
+                    time.sleep(1)
+                self.logger.debug("Return code: " + str(proc.returncode))
+                connector.status_update(StatusMessage.processing, resource, "Return code: " + str(proc.returncode))
+                if proc.returncode != 0 and self.args.waitonerror:
+                    connector.status_update(StatusMessage.processing, resource, "Bad return code, hanging out until killed")
+                    while True:
+                        connector.status_update(StatusMessage.processing, resource, "Sleeping for 1000 seconds")
+                        time.sleep(1000)
+    
+            connector.status_update(StatusMessage.processing, resource, "OpenDroneMap app finished.")
+    
+        self.logger.debug('OpenDroneMap app finished - %s' % system.now())
+        return
 
     # Helper function for uploading the file to the calling container with optional compression
     def upload_file(self, file_path, source_file_name, dest_file_name, connector, host, secret_key, dataset_id, compress):
@@ -193,7 +200,7 @@ class OpenDroneMapStitch(Extractor):
                         shutil.copyfileobj(f_in, f_out)
             else:
                 os.rename(sourcefile, resultfile)
-            logging.debug("[Finish] upload_to_dataset %s " % resultfile)
+            self.logger.debug("[Finish] upload_to_dataset %s " % resultfile)
             pyclowder.files.upload_to_dataset(connector, host, secret_key, dataset_id, resultfile)
         else:
             raise Exception("%s was not found" % sourcefile)
@@ -201,7 +208,7 @@ class OpenDroneMapStitch(Extractor):
     # Merges new settings with the master settings. Handles cases when new settings are not permitted
     # to override master settings by restoring those if they've been overridden
     def merge_settings(self, mastersettings, newsettings):
-
+        self.logger.debug('Merging settings: ' + str(newsettings))
         for name in newsettings:
             if not name in self.no_override_settings:
                 setattr(mastersettings, name, newsettings[name])
@@ -211,7 +218,7 @@ class OpenDroneMapStitch(Extractor):
     # Overidden method that checks if we want to process a message, or not
     def check_message(self, connector, host, secret_key, resource, parameters):
         if resource['triggering_file'] == "extractors-opendronemap.txt" or resource['triggering_file'] is None:
-            logging.debug("extractors-opendronemap.txt file uploaded")
+            self.logger.debug("extractors-opendronemap.txt file uploaded")
             return CheckMessage.download
         return CheckMessage.ignore
 
@@ -220,7 +227,7 @@ class OpenDroneMapStitch(Extractor):
     # checking settings for overrides. Also uploads the results of the run
     def process_message(self, connector, host, secret_key, resource, parameters):
         starttime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        logging.debug("Started computing images at %s" % str(starttime))
+        self.logger.debug("Started computing images at %s" % str(starttime))
         start_time = time.time()
 
         # We store the settings here in case they're
@@ -254,28 +261,37 @@ class OpenDroneMapStitch(Extractor):
                     if newsettings:
                         # Use the merged settings for this run
                         self.opendrone_args = self.merge_settings(self.opendrone_args, newsettings)
+        
+            override_settings = json.loads(parameters['parameters'])
+            if override_settings:
+                self.logger.debug('Overriding settings: ' + str(override_settings))
+                self.opendrone_args = self.merge_settings(self.opendrone_args, override_settings)
 
             # creating the folder to place the links to image files. Open Drone Maps wants all
             # the source image files in one folder
             self.opendrone_args.project_path = io.join_paths(self.opendrone_args.project_path, self.opendrone_args.name)
             imagesfolder = os.path.join(self.opendrone_args.project_path, "images")
             if not io.dir_exists(imagesfolder):
-                logging.debug('Directory %s does not exist. Creating it now.' % imagesfolder)
+                self.logger.debug('Directory %s does not exist. Creating it now.' % imagesfolder)
                 system.mkdir_p(os.path.abspath(imagesfolder))
-                logging.debug('[Prepare] create images folder: %s' % imagesfolder)
+                self.logger.debug('[Prepare] create images folder: %s' % imagesfolder)
 
             # symlink input images files to imagesfolder
             for input in paths:
                 source = os.path.join(imagesfolder, os.path.basename(input))
                 os.symlink(input, source)
-                logging.debug("[Prepare] image symlink: %s" % source)
+                self.logger.debug("[Prepare] image symlink: %s" % source)
 
-            # perform the drone processing
+            # perform the drone processing and preserve log output in a file
             self.stitch(connector, resource)
 
+            # Upload the logfile from the stitching operation to the dataset
+            logfilepath = os.path.join(self.opendrone_args.project_path, self.args.logfilename)
+            self.upload_file(self.opendrone_args.project_path, self.args.logfilename, self.args.logfilename, connector, host, secret_key, resource['id'], False)
+
             # Upload the output files to the dataset, optionally compressing the larger files
-            path = os.path.join(self.opendrone_args.project_path, "odm_orthophoto")
             filename = self.args.orthophotoname if len(self.args.orthophotoname) > 0 else "odm_orthophoto"
+            path = os.path.join(self.opendrone_args.project_path, filename) 
             if not hasattr(self.opendrone_args, "noorthophoto"):
                 self.upload_file(path, "odm_orthophoto.tif", filename + ".tif", connector, host, secret_key, resource['id'], False)
 
@@ -295,22 +311,22 @@ class OpenDroneMapStitch(Extractor):
                 self.upload_file(path, "odm_georeferenced_model.boundary.json", filename + ".json", connector, host, secret_key, resource['id'], False)
 
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-            logging.debug("[Finish] complete computing images at %s" % str(endtime))
-            logging.debug("Elapse time: " + str((time.time() - start_time)/60) + " minutes")
+            self.logger.debug("[Finish] complete computing images at %s" % str(endtime))
+            self.logger.debug("Elapse time: " + str((time.time() - start_time)/60) + " minutes")
         except Exception as ex:
-            logging.debug(ex.message)
+            self.logger.error(ex.message)
         finally:
             # Restore any settings that might have changed
             self.opendrone_args = original_settings
 
             try:
                 # Clean up the working environment by removing links and created folders
-                logging.debug("[Cleanup] remove computing folder: %s" % self.opendrone_args.project_path)
+                self.logger.debug("[Cleanup] remove computing folder: %s" % self.opendrone_args.project_path)
                 for path in paths:
                     inputfile = os.path.basename(path)
                     odmfile = os.path.join("/tmp", inputfile+".jpg")
                     if os.path.isfile(odmfile):
-                        logging.debug("[Cleanup] remove odm .jpg: %s" % odmfile)
+                        self.logger.debug("[Cleanup] remove odm .jpg: %s" % odmfile)
                         os.remove(odmfile)
                 shutil.rmtree(self.opendrone_args.project_path)
             except OSError:
