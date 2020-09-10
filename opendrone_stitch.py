@@ -157,7 +157,6 @@ class OpenDroneMapStitch(Extractor):
                             line = proc.stdout.readline()
                             if line:
                                 logging.debug(line.rstrip('\n'))
-                                connector.status_update(StatusMessage.processing, resource, line.rstrip('\n'))
                             else:
                                 proc.poll()
                                 break
