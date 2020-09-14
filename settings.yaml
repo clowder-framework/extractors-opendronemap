@@ -16,6 +16,7 @@ project_path: '/code' # Example: '/home/user/ODMProjects
 #verbose: False
 #time: False
 #opensfm_processes: 4 # by default this is set to $(nproc)
+fast-orthophoto: True
 #min_num_features: 4000
 #matcher_threshold: 2.0
 #matcher_ratio: 0.6
