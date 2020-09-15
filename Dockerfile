@@ -1,5 +1,5 @@
 
-FROM opendronemap/odm:0.7.0
+FROM opendronemap/odm:0.9.8
 
 ENV MAIN_SCRIPT="opendrone_stitch.py"
 

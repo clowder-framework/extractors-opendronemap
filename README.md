@@ -23,6 +23,8 @@ docker run --name=opendronemap-py2 -d --restart=always -e 'RABBITMQ_URI=amqp://u
 4. Upon completion, .tif, .laz, .shp, and all associated shape files will be shown in the dataset.
 If the docker container has been configured to not upload one or more of these files, they won't be available.
 
+NOTE: ODM processes within the container are not thread-safe. To run an additional thread, another extractor container can be started.
+
 ## How to Run - Advanced version
 
 Suggested allocation is 10GB memory for docker to run the extractor.
