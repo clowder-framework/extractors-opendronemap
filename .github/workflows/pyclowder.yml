@@ -1,0 +1,58 @@
+name: pyclowder
+
+# This will check to see if there is a new version of pyclowder and
+# automatically create a pull request.
+on:
+  push:
+    branches:
+      - master
+
+  schedule:
+    - cron: '0 0 * * *'
+
+# Certain actions will only run when this is the master repo.
+env:
+  MASTER_REPO: clowder-framework/extractors-opendronemap
+
+jobs:
+  pyclowder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # calculate some variables that are used later
+      - name: pyclowder upgrade
+        run: |
+          pyclowder=$(curl -s https://pypi.org/pypi/pyclowder/json | jq -r .info.version)
+          echo "::set-env name=PYCLOWDER::${pyclowder}"
+
+          for folder in $(find . -name requirements.txt -exec dirname {} \;); do
+            if [ "$(awk -F '==' '/^pyclowder/ { print $2 }' ${folder}/requirements.txt | sed 's/ //g')" != "${pyclowder}" ]; then
+              echo "Updating pyclowder for ${folder} to ${pyclowder}"
+
+              # update pyclowder
+              sed -i~ "s/^pyclowder *==.*/pyclowder==$pyclowder/" ${folder}/requirements.txt
+
+              # get extractor version
+              extractor=$(jq -r .version ${folder}/extractor_info.json)
+
+              # uodate version number
+              newextractor="${extractor%.*}.$(( ${extractor##*.} + 1 ))"
+              echo "Extractor for ${folder} is now ${newextractor}, was ${extractor}"
+
+              # update extractor_info.json
+              jq ".version=\"${newextractor}\"" ${folder}/extractor_info.json > tmpfile
+              mv tmpfile ${folder}/extractor_info.json
+            fi
+          done
+
+      # this will update the README of the dockerhub repo
+      - name: create PR if needed
+        if: github.repository == env.MASTER_REPO
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: "Updated pyclowder to ${{ env.PYCLOWDER }}"
+          title: "Updated pyclowder to ${{ env.PYCLOWDER }}"
+          reviewers: robkooper
+          delete-branch: true
