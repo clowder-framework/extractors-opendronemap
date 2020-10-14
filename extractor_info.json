@@ -34,6 +34,7 @@
         "title": "Quality",
         "enum": [ "2", "5", "10" ],
         "default": "5"
+      },
       "fast-orthophoto": {
         "type": "boolean",
         "title": "Use sparse reconstruction (fast orthophoto)",
