@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -10,33 +10,33 @@ from opendm import config
 
 from stages.odm_app import ODMApp
 
-print "[worker] Starting"
+print("[worker] Starting")
 
 arg_file = os.environ.get('ODM_SETTINGS')
 
-print "[worker] settings file: " + arg_file
+print("[worker] settings file: " + arg_file)
 
 if arg_file is None:
-    print "[worker] raising missing argument"
+    print("[worker] raising missing argument")
     raise ValueError("Missing settings file environment variable")
 
 newsettings = None
-print "[worker] loading settings"
+print("[worker] loading settings")
 with open(arg_file) as in_f:
     newsettings = yaml.safe_load(in_f)
 
 if not newsettings:
-    print "[worker] bad argument file"
+    print("[worker] bad argument file")
     raise ValueError("Invalid argument file passed in")
 
-print "[worker] getting config"
+print("[worker] getting config")
 args = config.config()
 
-print "[worker] merging config"
+print("[worker] merging config")
 for name in newsettings:
     setattr(args, name, newsettings[name])
 
-print "[worker] Starting"
+print("[worker] Starting")
 app = ODMApp(args=args)
 app.execute()
 
@@ -47,4 +47,4 @@ app.execute()
 # execute the plasm
 #plasm.execute(niter=1)
 
-print "[worker] finishing"
+print("[worker] finishing")

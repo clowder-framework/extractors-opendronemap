@@ -1,12 +1,20 @@
+FROM opendronemap/odm:v2.2.1
 
-FROM opendronemap/odm:0.9.8
+ARG VERSION="unknown"
+ARG BUILDNUMBER="unknown"
+ARG GITSHA1="unknown"
 
-ENV MAIN_SCRIPT="opendrone_stitch.py"
+# environemnt variables
+ENV VERSION=${VERSION} \
+    BUILDNUMBER=${BUILDNUMBER} \
+    GITSHA1=${GITSHA1} \
+    PYTHONPATH="/code:${PYTHONPATH}"
 
-RUN pip install pika \
-    && pip install --ignore-installed requests pyclowder
+WORKDIR /extractor
 
-COPY entrypoint.sh *.py extractor_info.json settings.yaml /code/
+COPY requirements.txt ./
+RUN pip3 install -r requirements.txt
 
-ENTRYPOINT ["/code/entrypoint.sh"]
-CMD ["extractor"]
+COPY *.py extractor_info.json settings.yaml ./
+ENTRYPOINT [""]
+CMD ["python3", "opendrone_stitch.py", "clowder"]
