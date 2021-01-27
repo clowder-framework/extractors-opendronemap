@@ -1,7 +1,7 @@
 {
   "@context": "http://clowder.ncsa.illinois.edu/contexts/extractors.jsonld",
   "name": "opendronemap.stitcher",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Stitch drone images using OpenDroneMap.",
   "author": "Bing Zhang <bing@illinois.edu>",
   "contributors": [
@@ -27,6 +27,7 @@
   "dependencies": ["opendronemap", "pika", "requests"],
   "bibtex": [],
   "categories": ["EXTRACT"],
+  "labels": ["Type/Image","Domain/UAV"],
   "parameters": {
     "schema": {
       "orthophoto_resolution": {
