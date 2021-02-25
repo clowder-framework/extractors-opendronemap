@@ -1,13 +1,13 @@
 {
   "@context": "http://clowder.ncsa.illinois.edu/contexts/extractors.jsonld",
   "name": "ncsa.opendronemap.stitcher",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Stitch drone images using OpenDroneMap.",
   "author": "Bing Zhang <bing@illinois.edu>",
   "contributors": [
-      "Chris Schnaufer <schnaufer@email.arizona.edu>",
-      "Mike Lambert <lambert8@illinois.edu>"
-    ],
+    "Chris Schnaufer <schnaufer@email.arizona.edu>",
+    "Mike Lambert <lambert8@illinois.edu>"
+  ],
   "contexts": [],
   "repository": [
     {
@@ -17,23 +17,37 @@
     {
       "repType": "docker",
       "repUrl": "clowder/extractors-opendronemap"
-    }],
+    }
+  ],
   "process": {
-      "dataset": [
-          "file.added"
-      ]
+    "dataset": [
+      "file.added"
+    ]
   },
   "external_services": [],
-  "dependencies": ["opendronemap", "pika", "requests"],
+  "dependencies": [
+    "opendronemap",
+    "pika",
+    "requests"
+  ],
   "bibtex": [],
-  "categories": ["EXTRACT"],
-  "labels": ["Type/Image","Domain/UAV"],
+  "categories": [
+    "EXTRACT"
+  ],
+  "labels": [
+    "Type/Image",
+    "Domain/UAV"
+  ],
   "parameters": {
     "schema": {
       "orthophoto_resolution": {
         "type": "string",
         "title": "Quality",
-        "enum": [ "2", "5", "10" ],
+        "enum": [
+          "2",
+          "5",
+          "10"
+        ],
         "default": "5"
       },
       "fast-orthophoto": {
