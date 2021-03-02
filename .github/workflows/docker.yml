@@ -61,9 +61,10 @@ jobs:
           tags: "${{ env.TAGS }}"
           buildargs: VERSION,BUILDNUMBER,GITSHA1
           no_push: true
+
       # this will publish to github container registry
       - name: Publish to GitHub
-        if: github.event_name != 'push' && github.repository == env.MASTER_REPO
+        if: github.event_name == 'push' && github.repository == env.MASTER_REPO
         uses: elgohr/Publish-Docker-Github-Action@2.22
         env:
           VERSION: ${{ env.VERSION }}
@@ -79,7 +80,7 @@ jobs:
 
       # this will publish to the clowder dockerhub repo
       - name: Publish to Docker Hub
-        if: github.event_name != 'push' && github.repository == env.MASTER_REPO
+        if: github.event_name == 'push' && github.repository == env.MASTER_REPO
         uses: elgohr/Publish-Docker-Github-Action@2.22
         env:
           VERSION: ${{ env.VERSION }}
@@ -95,7 +96,7 @@ jobs:
       # this will update the README of the dockerhub repo
       - name: check file
         id: filecheck
-        if: github.event_name != 'push' && github.repository == env.MASTER_REPO
+        if: github.event_name == 'push' && github.repository == env.MASTER_REPO
         run: |
           if [ -e "README.md" ]; then
             echo "##[set-output name=exists;]true"
