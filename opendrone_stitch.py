@@ -21,8 +21,6 @@ from opendm import config
 from opendm import system
 from opendm import io
 
-from opendm.config import alphanumeric_string
-
 # This class prepares and runs the Open Drone Map code in the Clowder environment
 class OpenDroneMapStitch(Extractor):
 
@@ -31,22 +29,6 @@ class OpenDroneMapStitch(Extractor):
         super(OpenDroneMapStitch, self).__init__()
 
         # Add our own touches to the command-line, environment variable parser
-        self.parser.add_argument('--denyfiletypes',
-                                 default=os.getenv('DENYFILETYPES', ""),
-                                 help='Comma separated list of file extensions (without the period) to never upload')
-        self.parser.add_argument('--orthophotoname',
-                                 default=os.getenv('ORTHOPHOTONAME', ""),
-                                 help='An alternate file name for the orthophoto images (without the filename extension)')
-        self.parser.add_argument('--pointcloudname',
-                                 default=os.getenv('POINTCLOUDNAME', ""),
-                                 help='An alternate file name for the point cloud files (without the filename extension)')
-        self.parser.add_argument('--shapefilename',
-                                 default=os.getenv('SHAPEFILENAME', ""),
-                                 help='An alternate file name for the shapefile files (without the filename extension)')
-        self.parser.add_argument('name',
-                                 metavar='<project name>',
-                                 type=alphanumeric_string,
-                                 help='Name of Project (i.e subdirectory of projects folder)')
         # Used to assist in debugging a running instance
         self.parser.add_argument('--waitonerror',
                                  default=False,
@@ -62,27 +44,9 @@ class OpenDroneMapStitch(Extractor):
 
         # Save a reference to the arguments passed in
         self.opendrone_args = args
+        self.opendrone_args.name = "clowder"
 
         super(OpenDroneMapStitch, self).setup()
-
-        # Get the file types that may be denied and/or no conpressed. The actual value of the
-        # attributes is ignored, just having the attribute existing triggeres the feature
-        if len(self.args.denyfiletypes) > 0:
-            excludedtypes = self.clean_file_extensions(self.args.denyfiletypes)
-            if 'tif' in excludedtypes:
-                self.opendrone_args.noorthophoto = True
-            if 'laz' in excludedtypes:
-                self.opendrone_args.nolaz = True
-            if 'shp' in excludedtypes:
-                self.opendrone_args.noshp = True
-
-        # Make sure our filenames are cleaned up as well to prevent unnamed files from being loaded
-        self.args.orthophotoname = self.args.orthophotoname.strip()
-        self.args.pointcloudname = self.args.pointcloudname.strip()
-        self.args.shapefilename = self.args.shapefilename.strip()
-
-        # TODO: Parameterize logfilename?
-        self.args.logfilename = "odm_stitching.log"
 
         # setup logging for the extractor
         self.logger = logging.getLogger('__main__')
@@ -94,10 +58,6 @@ class OpenDroneMapStitch(Extractor):
         self.logger.debug("project_path: %s" % str(self.opendrone_args.project_path))
         self.logger.debug("name: %s" % str(self.opendrone_args.name))
         self.logger.debug("rerun_all: %r" % bool(self.opendrone_args.rerun_all))
-        self.logger.debug("excluded file types: %s" % str(self.args.denyfiletypes))
-        self.logger.debug("orthophoto name override: %s" % str(self.args.orthophotoname))
-        self.logger.debug("point cloud name override: %s" % str(self.args.pointcloudname))
-        self.logger.debug("shapefile name override: %s" % str(self.args.shapefilename))
 
     # Returns an array of comma-separated file types that has been cleaned
     def clean_file_extensions(self, extensions_string):
@@ -154,7 +114,7 @@ class OpenDroneMapStitch(Extractor):
             connector.status_update(StatusMessage.processing, resource, "Exception: " + str(ex))
             self.logger.exception("Error running process.")
 
-        logfilepath = os.path.join(self.opendrone_args.project_path, self.args.logfilename)
+        logfilepath = os.path.join(self.opendrone_args.project_path, "odm_stitching.log")
         with open(logfilepath, 'wb', 0) as logfile:
             if proc:
                 # Loop here processing the output until the proc finishes
@@ -201,11 +161,6 @@ class OpenDroneMapStitch(Extractor):
                     time.sleep(1)
                 self.logger.debug("Return code: " + str(proc.returncode))
                 connector.status_update(StatusMessage.processing, resource, "Return code: " + str(proc.returncode))
-                if proc.returncode != 0 and self.args.waitonerror:
-                    connector.status_update(StatusMessage.processing, resource, "Bad return code, hanging out until killed")
-                    while True:
-                        connector.status_update(StatusMessage.processing, resource, "Sleeping for 1000 seconds")
-                        time.sleep(1000)
     
             connector.status_update(StatusMessage.processing, resource, "OpenDroneMap app finished.")
     
@@ -213,8 +168,8 @@ class OpenDroneMapStitch(Extractor):
         return
 
     # Helper function for uploading the file to the calling container with optional compression
-    def upload_file(self, file_path, source_file_name, dest_file_name, connector, host, secret_key, resource, compress):
-        sourcefile = os.path.join(file_path, source_file_name)
+    def upload_file(self, source_file_name, dest_file_name, connector, host, secret_key, resource, compress):
+        sourcefile = os.path.join(self.opendrone_args.project_path, source_file_name)
         if os.path.isfile(sourcefile):
             resultfile = os.path.join(self.opendrone_args.project_path, dest_file_name)
             if compress:
@@ -227,8 +182,8 @@ class OpenDroneMapStitch(Extractor):
             self.logger.debug("[Finish] upload_to_dataset %s " % resultfile)
             pyclowder.files.upload_to_dataset(connector, host, secret_key, resource['id'], resultfile)
         else:
-            connector.status_update(StatusMessage.processing, resource, "Could not upload %s" % sourcefile)
-            self.logger.error("%s was not found" % sourcefile)
+            connector.status_update(StatusMessage.processing, resource, "Could not upload %s" % source_file_name)
+            self.logger.error("%s was not found, might not have been generated" % source_file_name)
 
     # Merges new settings with the master settings. Handles cases when new settings are not permitted
     # to override master settings by restoring those if they've been overridden
@@ -311,30 +266,30 @@ class OpenDroneMapStitch(Extractor):
             self.stitch(connector, resource)
 
             # Upload the logfile from the stitching operation to the dataset
-            logfilepath = os.path.join(self.opendrone_args.project_path, self.args.logfilename)
-            self.upload_file(self.opendrone_args.project_path, self.args.logfilename, self.args.logfilename, connector, host, secret_key, resource, False)
+            if not "upload_logfile" in self.opendrone_args or self.opendrone_args.upload_logfile:
+                self.upload_file("odm_stitching.log", "odm_stitching.log", connector, host, secret_key, resource, False)
 
             # Upload the output files to the dataset, optionally compressing the larger files
-            filename = self.args.orthophotoname if len(self.args.orthophotoname) > 0 else "odm_orthophoto"
-            path = os.path.join(self.opendrone_args.project_path, filename) 
-            if not hasattr(self.opendrone_args, "noorthophoto"):
-                self.upload_file(path, "odm_orthophoto.tif", filename + ".tif", connector, host, secret_key, resource, False)
+            if not self.opendrone_args.skip_orthophoto:
+                self.upload_file("odm_orthophoto/odm_orthophoto.tif", "odm_orthophoto.tif", connector, host, secret_key, resource, False)
 
-            # Handle uploading two types of files from the georeferencing folder
-            path = os.path.join(self.opendrone_args.project_path, "odm_georeferencing")
-            filename = self.args.pointcloudname if len(self.args.pointcloudname) > 0 else "odm_georeferenced_model"
-            if not hasattr(self.opendrone_args, "nolaz"):
-                self.upload_file(path, "odm_georeferenced_model.laz", filename + ".laz", connector, host, secret_key, resource, False)
-            filename = self.args.shapefilename if len(self.args.shapefilename) > 0 else "odm_georeferenced_model.bounds"
-            if not hasattr(self.opendrone_args, "noshp"):
-                self.upload_file(path, "odm_georeferenced_model.bounds.shp", filename + ".shp", connector, host, secret_key, resource, False)
-                self.upload_file(path, "odm_georeferenced_model.bounds.dbf", filename + ".dbf", connector, host, secret_key, resource, False)
-                self.upload_file(path, "odm_georeferenced_model.bounds.prj", filename + ".prj", connector, host, secret_key, resource, False)
-                self.upload_file(path, "odm_georeferenced_model.bounds.shx", filename + ".shx", connector, host, secret_key, resource, False)
-                self.upload_file(path, "proj.txt",                           filename + ".proj.txt", connector, host, secret_key, resource, False)
-                self.upload_file(path, "odm_georeferenced_model.bounds.geojson", filename + ".geojson", connector, host, secret_key, resource, False)
-                self.upload_file(path, "odm_georeferenced_model.boundary.json", filename + ".json", connector, host, secret_key, resource, False)
+            # upload LAZ file
+            if not "upload_laz" in self.opendrone_args or self.opendrone_args.upload_laz:
+                self.upload_file("odm_georeferencing/odm_georeferenced_model.laz", "odm_georeferenced_model.laz", connector, host, secret_key, resource, False)
 
+            # upload dem/dsm/dtpm
+            if self.opendrone_args.dsm:
+                self.upload_file("odm_dem/dsm.tif", "dsm.tif", connector, host, secret_key, resource, False)
+            if self.opendrone_args.dtm:
+                self.upload_file("odm_dem/dtm.tif", "dtm.tif", connector, host, secret_key, resource, False)
+
+            # upload boundary/projection files
+            if not "upload_boundary" in self.opendrone_args or self.opendrone_args.upload_boundary:
+                self.upload_file("odm_georeferencing/proj.txt", "odm_georeferenced_model.bounds.proj.txt", connector, host, secret_key, resource, False)
+                self.upload_file("odm_georeferencing/odm_georeferenced_model.bounds.geojson", "odm_georeferenced_model.geojson", connector, host, secret_key, resource, False)
+                self.upload_file("odm_georeferencing/odm_georeferenced_model.boundary.json", "odm_georeferenced_model.json", connector, host, secret_key, resource, False)
+
+            # all done
             endtime = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             self.logger.debug("[Finish] complete computing images at %s" % str(endtime))
             self.logger.debug("Elapse time: " + str((time.time() - start_time)/60) + " minutes")
