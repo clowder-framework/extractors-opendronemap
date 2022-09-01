@@ -3,7 +3,7 @@ name: Docker
 # This will run when:
 # - a new release is created, to make sure the right tags of the
 #   docker images are pushed (expects tags to be v1.8.4).
-# - when new code is pushed to master/develop to push the tags
+# - when new code is pushed to main/develop to push the tags
 #   latest and develop
 # - when a pull request is created and updated  to make sure the
 #   Dockerfile is still valid.
@@ -14,13 +14,13 @@ name: Docker
 on:
   push:
     branches:
-      - master
+      - main
 
   pull_request:
 
-# Certain actions will only run when this is the master repo.
+# Certain actions will only run when this is the main repo.
 env:
-  MASTER_REPO: clowder-framework/extractors-opendronemap
+  MAIN_REPO: clowder-framework/extractors-opendronemap
   DOCKERHUB_ORG: clowder
 
 jobs:
@@ -64,7 +64,7 @@ jobs:
 
       # this will publish to github container registry
       - name: Publish to GitHub
-        if: github.event_name == 'push' && github.repository == env.MASTER_REPO
+        if: github.event_name == 'push' && github.repository == env.MAIN_REPO
         uses: elgohr/Publish-Docker-Github-Action@2.22
         env:
           VERSION: ${{ env.VERSION }}
@@ -80,7 +80,7 @@ jobs:
 
       # this will publish to the clowder dockerhub repo
       - name: Publish to Docker Hub
-        if: github.event_name == 'push' && github.repository == env.MASTER_REPO
+        if: github.event_name == 'push' && github.repository == env.MAIN_REPO
         uses: elgohr/Publish-Docker-Github-Action@2.22
         env:
           VERSION: ${{ env.VERSION }}
@@ -96,7 +96,7 @@ jobs:
       # this will update the README of the dockerhub repo
       - name: check file
         id: filecheck
-        if: github.event_name == 'push' && github.repository == env.MASTER_REPO
+        if: github.event_name == 'push' && github.repository == env.MAIN_REPO
         run: |
           if [ -e "README.md" ]; then
             echo "##[set-output name=exists;]true"
@@ -104,7 +104,7 @@ jobs:
             echo "##[set-output name=exists;]false"
           fi
       - name: Docker Hub Description
-        if: github.event_name != 'push' && github.repository == env.MASTER_REPO && steps.filecheck.outputs.exists == 'true'
+        if: github.event_name != 'push' && github.repository == env.MAIN_REPO && steps.filecheck.outputs.exists == 'true'
         uses: peter-evans/dockerhub-description@v2
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
