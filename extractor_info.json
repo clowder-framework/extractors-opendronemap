@@ -1,12 +1,13 @@
 {
   "@context": "http://clowder.ncsa.illinois.edu/contexts/extractors.jsonld",
   "name": "ncsa.opendronemap.stitcher",
-  "version": "2.0.4",
+  "version": "2.2.0",
   "description": "Stitch drone images using OpenDroneMap.",
   "author": "Bing Zhang <bing@illinois.edu>",
   "contributors": [
     "Chris Schnaufer <schnaufer@email.arizona.edu>",
-    "Mike Lambert <lambert8@illinois.edu>"
+    "Sara Lambert <lambert8@illinois.edu>",
+    "Rob Kooper <kooper@illinois.edu>"
   ],
   "contexts": [],
   "repository": [
@@ -50,17 +51,47 @@
         ],
         "default": "5"
       },
-      "fast-orthophoto": {
+      "radiometric_calibration": {
+        "type": "string",
+        "title": "Radiometric normalization.",
+        "enum": [
+          "none",
+          "camera",
+          "camera+sun"
+        ],
+        "default": "none"
+      },
+      "dsm": {
         "type": "boolean",
-        "title": "Use sparse reconstruction (fast orthophoto)",
+        "title": "Create digital surface model",
+        "default": false
+      },
+      "dtm": {
+        "type": "boolean",
+        "title": "Create digital terrain model",
+        "default": false
+      },
+      "upload_logfile": {
+        "type": "boolean",
+        "title": "Upload log file",
         "default": true
+      },
+      "upload_laz": {
+        "type": "boolean",
+        "title": "Upload LAZ file",
+        "default": false
+      },
+      "upload_boundary": {
+        "type": "boolean",
+        "title": "Upload boundary files",
+        "default": false
       }
     },
     "form": [
       {
         "key": "orthophoto_resolution",
         "type": "select",
-        "notitle": true,
+        "notitle": false,
         "titleMap": {
           "2": "High Quality",
           "5": "Medium Quality",
@@ -68,8 +99,38 @@
         }
       },
       {
-        "key": "fast-orthophoto",
-        "inlinetitle": "Use sparse reconstruction (fast orthophoto flag)",
+        "key": "radiometric_calibration",
+        "type": "select",
+        "notitle": false,
+        "titleMap": {
+          "none": "none",
+          "camera": "camera",
+          "camera+sun": "camera+sun"
+        }
+      },
+      {
+        "key": "dsm",
+        "inlinetitle": "Create digital surface model",
+        "notitle": true
+      },
+      {
+        "key": "dtm",
+        "inlinetitle": "Create digital terrain model",
+        "notitle": true
+      },
+      {
+        "key": "upload_logfile",
+        "inlinetitle": "Upload log file",
+        "notitle": true
+      },
+      {
+        "key": "upload_laz",
+        "inlinetitle": "Upload LAZ file",
+        "notitle": true
+      },
+      {
+        "key": "upload_boundary",
+        "inlinetitle": "Upload boundary files",
         "notitle": true
       }
     ]

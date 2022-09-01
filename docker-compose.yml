@@ -1,0 +1,88 @@
+version: '3.5'
+
+services:
+
+  # ----------------------------------------------------------------------
+  # EXTRACTOR
+  # ----------------------------------------------------------------------
+
+  opendronemap:
+    image: clowder/extractors-opendronemap
+    build: .
+    restart: unless-stopped
+    networks:
+      - clowder
+    environment:
+      - HEARTBEAT=10
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq/%2F
+
+  # ----------------------------------------------------------------------
+  # CLOWDER + DEPENDENCIES
+  # ----------------------------------------------------------------------
+
+  clowder:
+    image: clowder/clowder
+    restart: unless-stopped
+    networks:
+      - clowder
+    ports:
+      - 9000:9000
+    depends_on:
+      - mongo
+    environment:
+      - CLOWDER_ADMINS=admin@example.com
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq/%2F
+    volumes:
+      - clowder-custom:/home/clowder/custom
+      - clowder-data:/home/clowder/data
+
+  # database to hold metadata (required)
+  mongo:
+    image: mongo:3.6
+    restart: unless-stopped
+    networks:
+      - clowder
+    volumes:
+      - mongo:/data/db
+
+  # message broker (optional but needed for extractors)
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    restart: unless-stopped
+    networks:
+      - clowder
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+
+  # monitor clowder extractors
+  monitor:
+    image: clowder/monitor
+    restart: unless-stopped
+    networks:
+      - clowder
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq/%2F
+      - RABBITMQ_MGMT_PORT=15672
+
+# ----------------------------------------------------------------------
+# NETWORK FOR CONTAINER COMMUNICATION
+# ----------------------------------------------------------------------
+networks:
+  clowder:
+
+# ----------------------------------------------------------------------
+# VOLUMES FOR PERSISTENT STORAGE
+# ----------------------------------------------------------------------
+volumes:
+  clowder-data:
+  clowder-custom:
+  mongo:
+  rabbitmq:

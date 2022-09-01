@@ -1,4 +1,4 @@
-FROM opendronemap/odm:v2.2.1
+FROM opendronemap/odm:2.8.8
 
 ARG VERSION="unknown"
 ARG BUILDNUMBER="unknown"
@@ -17,4 +17,4 @@ RUN pip3 install -r requirements.txt
 
 COPY *.py extractor_info.json settings.yaml ./
 ENTRYPOINT [""]
-CMD ["python3", "opendrone_stitch.py", "clowder"]
+CMD ["python3", "opendrone_stitch.py"]
