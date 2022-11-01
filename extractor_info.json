@@ -1,7 +1,7 @@
 {
   "@context": "http://clowder.ncsa.illinois.edu/contexts/extractors.jsonld",
   "name": "ncsa.opendronemap.stitcher",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Stitch drone images using OpenDroneMap.",
   "author": "Bing Zhang <bing@illinois.edu>",
   "contributors": [
@@ -41,6 +41,11 @@
   ],
   "parameters": {
     "schema": {
+      "fast-orthophoto": {
+        "type": "boolean",
+        "title": "Use sparse reconstruction (fast orthophoto)",
+        "default": true
+      },
       "orthophoto_resolution": {
         "type": "string",
         "title": "Quality",
@@ -88,6 +93,11 @@
       }
     },
     "form": [
+      {
+        "key": "fast-orthophoto",
+        "inlinetitle": "Use sparse reconstruction (fast orthophoto flag)",
+        "notitle": true
+      },
       {
         "key": "orthophoto_resolution",
         "type": "select",

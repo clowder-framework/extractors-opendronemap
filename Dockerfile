@@ -1,4 +1,4 @@
-FROM opendronemap/odm:2.8.8
+FROM opendronemap/odm:2.9.2
 
 ARG VERSION="unknown"
 ARG BUILDNUMBER="unknown"
