@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## 2.3.0 - 2022-11-07
+
+### Added
+- re-added fast ortophoto flag
+
+### Changed
+- Updated base image to opendronemap 2.9.2
+
 ## 2.2.0 - 2022-08-22
 
 ### Added

@@ -41,7 +41,7 @@
   ],
   "parameters": {
     "schema": {
-      "fast-orthophoto": {
+      "fast_orthophoto": {
         "type": "boolean",
         "title": "Use sparse reconstruction (fast orthophoto)",
         "default": true
@@ -94,7 +94,7 @@
     },
     "form": [
       {
-        "key": "fast-orthophoto",
+        "key": "fast_orthophoto",
         "inlinetitle": "Use sparse reconstruction (fast orthophoto flag)",
         "notitle": true
       },
